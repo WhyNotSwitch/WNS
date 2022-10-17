@@ -1,5 +1,7 @@
 const Solarize = artifacts.require("Solarize")
 
-module.exports = function (deployer) {
-    deployer.deploy(Solarize)
+module.exports = async function (deployer) {
+    await deployer.deploy(Solarize);
+    const solarize = await Solarize.deployed();
+    console.log("deployed at", solarize.address);
 }
