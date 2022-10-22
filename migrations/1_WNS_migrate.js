@@ -1,4 +1,4 @@
-const WNS = artifacts.require("WhyNotSwitch")
+const WNS = artifacts.require("WNS")
 
 module.exports = async function (deployer) {
     await deployer.deploy(WNS);
