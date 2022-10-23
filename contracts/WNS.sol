@@ -5,7 +5,9 @@ import "./iWNS.sol";
 import "./WNS1155.sol";
 
 error NoRevenue();
-uint8 constant coinId = 0;
+
+// token 0 -> native currency
+uint8 constant currency = 0;
 uint8 constant devIndex = 0;
 uint8 constant ownIndex = 1;
 
@@ -17,8 +19,8 @@ contract WNS is WhyNotSwitch, iWNS {
     // map TokenId -> [$Developer, $Owner]
     mapping(uint256 => uint256[2]) private revenues;
 
-    modifier notCoin(uint256 tokenId) {
-        require(tokenId != coinId, "Can't be the zero token");
+    modifier notCurrency(uint256 tokenId) {
+        require(tokenId != currency, "Can't be the zero token");
         _;
     }
 
@@ -46,7 +48,7 @@ contract WNS is WhyNotSwitch, iWNS {
             revert NoRevenue();
         }
         revenues[tokenId][index] = 0;
-        _mint(msg.sender, coinId, _revenue, bytes(""));
+        _mint(msg.sender, currency, _revenue, bytes(""));
 
         emit Claim({
             to: msg.sender,
@@ -59,7 +61,7 @@ contract WNS is WhyNotSwitch, iWNS {
     function claimFee(uint256 tokenId)
         external
         requiresDeveloper(tokenId)
-        notCoin(tokenId)
+        notCurrency(tokenId)
     {
         _claimTokens(tokenId, devIndex);
     }
@@ -67,18 +69,18 @@ contract WNS is WhyNotSwitch, iWNS {
     function claimRevenue(uint256 tokenId)
         external
         requiresMonopoly(tokenId)
-        notCoin(tokenId)
+        notCurrency(tokenId)
     {
         _claimTokens(tokenId, ownIndex);
     }
 
     function pay(uint256 tokenId, uint256 amount) external {
         require(
-            balanceOf(msg.sender, coinId) >= amount,
+            balanceOf(msg.sender, currency) >= amount,
             "ERC1155: insufficient balance for transfer"
         );
         unchecked {
-            _burn(msg.sender, coinId, amount);
+            _burn(msg.sender, currency, amount);
             revenues[tokenId][devIndex] += (amount * 15) / 100;
             revenues[tokenId][ownIndex] += (amount * 85) / 100;
         }
@@ -100,7 +102,7 @@ contract WNS is WhyNotSwitch, iWNS {
     function feeOf(uint256 tokenId)
         external
         view
-        notCoin(tokenId)
+        notCurrency(tokenId)
         returns (uint256)
     {
         return revenues[tokenId][devIndex];
@@ -109,7 +111,7 @@ contract WNS is WhyNotSwitch, iWNS {
     function revenueOf(uint256 tokenId)
         external
         view
-        notCoin(tokenId)
+        notCurrency(tokenId)
         returns (uint256)
     {
         return revenues[tokenId][ownIndex];
