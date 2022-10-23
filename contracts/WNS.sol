@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import "./iWNS.sol";
 import "./WNS1155.sol";
 
 error NoRevenue();
@@ -8,26 +9,13 @@ uint8 constant coinId = 0;
 uint8 constant devIndex = 0;
 uint8 constant ownIndex = 1;
 
-contract WNS is WhyNotSwitch {
+
+contract WNS is WhyNotSwitch, iWNS {
     // map TokenId -> Address (remember your dev)
     mapping(uint256 => address) private developers;
 
     // map TokenId -> [$Developer, $Owner]
     mapping(uint256 => uint256[2]) private revenues;
-
-    event Revenue(
-        address from,
-        uint256 indexed amount,
-        uint256 indexed tokenId,
-        uint256 indexed timestamp
-    );
-
-    event Claim(
-        address to,
-        uint256 indexed amount,
-        uint256 indexed tokenId,
-        uint256 indexed timestamp
-    );
 
     modifier notCoin(uint256 tokenId) {
         require(tokenId != coinId, "Can't be the zero token");
@@ -52,6 +40,38 @@ contract WNS is WhyNotSwitch {
         developers[tokenId] = to;
     }
 
+    function _claimTokens(uint256 tokenId, uint256 index) internal {
+        uint256 _revenue = revenues[tokenId][index];
+        if (_revenue <= 0) {
+            revert NoRevenue();
+        }
+        revenues[tokenId][index] = 0;
+        _mint(msg.sender, coinId, _revenue, bytes(""));
+
+        emit Claim({
+            to: msg.sender,
+            amount: _revenue,
+            tokenId: tokenId,
+            timestamp: block.timestamp
+        });
+    }
+
+    function claimFee(uint256 tokenId)
+        external
+        requiresDeveloper(tokenId)
+        notCoin(tokenId)
+    {
+        _claimTokens(tokenId, devIndex);
+    }
+
+    function claimRevenue(uint256 tokenId)
+        external
+        requiresMonopoly(tokenId)
+        notCoin(tokenId)
+    {
+        _claimTokens(tokenId, ownIndex);
+    }
+
     function pay(uint256 tokenId, uint256 amount) external {
         require(
             balanceOf(msg.sender, coinId) >= amount,
@@ -71,39 +91,13 @@ contract WNS is WhyNotSwitch {
         });
     }
 
-    function _claimTokens(uint256 tokenId, uint256 index) internal {
-        uint256 _revenue = revenues[tokenId][index];
-        if (_revenue <= 0) {
-            revert NoRevenue();
-        }
-        revenues[tokenId][index] = 0;
-        _mint(msg.sender, coinId, _revenue, bytes(""));
+    function developerOf(uint256 tokenId) external view returns (address) {
+        address developer = developers[tokenId];
+        require(developer != address(0), "ERC721: invalid token ID");
+        return developer;
     }
 
-    function claimFees(uint256 tokenId)
-        external
-        requiresDeveloper(tokenId)
-        notCoin(tokenId)
-    {
-        _claimTokens(tokenId, devIndex);
-    }
-
-    function claimRevenue(uint256 tokenId)
-        external
-        requiresMonopoly(tokenId)
-        notCoin(tokenId)
-    {
-        _claimTokens(tokenId, ownIndex);
-
-        emit Claim({
-            to: msg.sender,
-            amount: amount,
-            tokenId: tokenId,
-            timestamp: block.timestamp
-        });
-    }
-
-    function checkFees(uint256 tokenId)
+    function feeOf(uint256 tokenId)
         external
         view
         notCoin(tokenId)
@@ -112,18 +106,12 @@ contract WNS is WhyNotSwitch {
         return revenues[tokenId][devIndex];
     }
 
-    function checkRevenue(uint256 tokenId)
+    function revenueOf(uint256 tokenId)
         external
         view
         notCoin(tokenId)
         returns (uint256)
     {
         return revenues[tokenId][ownIndex];
-    }
-
-    function developerOf(uint256 tokenId) public view returns (address) {
-        address developer = developers[tokenId];
-        require(developer != address(0), "ERC721: invalid token ID");
-        return developer;
     }
 }
