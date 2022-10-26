@@ -34,14 +34,46 @@ contract WNS is WhyNotSwitch, iWNS {
         _;
     }
 
-    function _claimTokens(uint256 id, uint256 revenue) internal {
-        if (revenue <= 0) {
-            revert NoRevenue();
-        }
-        _meta[id].revenue = 0;
-        _mint(msg.sender, currency, revenue, bytes(""));
+    function setDeveloper(address to, uint256 id)
+        external
+        onlyRole(MINTER_ROLE)
+    {
+        require(id != 0, "ERC1155: invalid token ID");
+        require(to != address(0), "Can't be set to the zero address");
+        _meta[id].developer = to;
+    }
 
-        emit Claim(msg.sender, revenue, id, block.timestamp);
+    function developerOf(uint256 id) external view returns (address) {
+        address developer = _meta[id].developer;
+        return developer;
+    }
+
+    function pay(uint256 id, uint256 amount) external {
+        require(
+            balanceOf(msg.sender, currency) >= amount,
+            "ERC1155: insufficient balance for transfer"
+        );
+        unchecked {
+            uint256 fee = (amount * 15) / 100;
+            _burn(msg.sender, currency, amount);
+            _meta[id].fee += fee;
+            _meta[id].revenue += amount - fee;
+        }
+
+        emit Claim(msg.sender, amount, id, block.timestamp);
+    }
+
+    function feeOf(uint256 id) external view notCurrency(id) returns (uint256) {
+        return _meta[id].fee;
+    }
+
+    function revenueOf(uint256 id)
+        external
+        view
+        notCurrency(id)
+        returns (uint256)
+    {
+        return _meta[id].revenue;
     }
 
     function claimFee(uint256 id)
@@ -62,45 +94,14 @@ contract WNS is WhyNotSwitch, iWNS {
         _claimTokens(id, revenue);
     }
 
-    function pay(uint256 id, uint256 amount) external {
-        require(
-            balanceOf(msg.sender, currency) >= amount,
-            "ERC1155: insufficient balance for transfer"
-        );
-        unchecked {
-            uint256 fee = (amount * 15) / 100;
-            _burn(msg.sender, currency, amount);
-            _meta[id].fee += fee;
-            _meta[id].revenue += amount - fee;
+    function _claimTokens(uint256 id, uint256 revenue) private {
+        if (revenue <= 0) {
+            revert NoRevenue();
         }
+        _meta[id].revenue = 0;
+        _mint(msg.sender, currency, revenue, bytes(""));
 
-        emit Claim(msg.sender, amount, id, block.timestamp);
+        emit Claim(msg.sender, revenue, id, block.timestamp);
     }
 
-    function setDeveloper(address to, uint256 id)
-        external
-        onlyRole(MINTER_ROLE)
-    {
-        require(id != 0, "ERC1155: invalid token ID");
-        require(to != address(0), "Can't be set to the zero address");
-        _meta[id].developer = to;
-    }
-
-    function developerOf(uint256 id) external view returns (address) {
-        address developer = _meta[id].developer;
-        return developer;
-    }
-
-    function feeOf(uint256 id) external view notCurrency(id) returns (uint256) {
-        return _meta[id].fee;
-    }
-
-    function revenueOf(uint256 id)
-        external
-        view
-        notCurrency(id)
-        returns (uint256)
-    {
-        return _meta[id].revenue;
-    }
 }

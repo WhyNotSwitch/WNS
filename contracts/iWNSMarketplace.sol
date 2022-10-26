@@ -2,13 +2,6 @@
 pragma solidity ^0.8.16;
 
 interface iMarketplace {
-    struct MarketOrder {
-        uint256 tokenId;
-        uint256 amount;
-        uint256 price;
-        address payable seller;
-    }
-
     event ItemListed(
         address indexed seller,
         uint256 indexed tokenId,
@@ -28,6 +21,13 @@ interface iMarketplace {
         uint256 indexed price,
         uint256 amount
     );
+
+    struct MarketOrder {
+        uint256 tokenId;
+        uint256 amount;
+        uint256 price;
+        address payable seller;
+    }
 
     function openOrder(
         uint256 tokenId,

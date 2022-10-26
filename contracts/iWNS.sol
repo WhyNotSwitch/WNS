@@ -18,17 +18,17 @@ interface iWNS{
         uint256 indexed timestamp
     );
 
-    function claimFee(uint256 id) external;
-
-    function claimRevenue(uint256 id) external;
-
-    function pay(uint256 id, uint256 amount) external;
-
     function setDeveloper(address to, uint256 id) external;
 
     function developerOf(uint256 id) external view returns (address);
+
+    function pay(uint256 id, uint256 amount) external;
     
     function feeOf(uint256 id) external view returns(uint256);
 
     function revenueOf(uint256 id) external view returns(uint256);
+
+    function claimFee(uint256 id) external;
+
+    function claimRevenue(uint256 id) external;
 }

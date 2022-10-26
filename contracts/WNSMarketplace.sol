@@ -53,24 +53,7 @@ contract Marketplace is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
 
-        _setNftContract(nftAddress);
-    }
-
-    function _setNftContract(address nftAddress) internal {
-        require(nftAddress != address(0), "Can't be set to the zero address");
-        _nftAddress = nftAddress;
-        nftContract = IERC1155(_nftAddress);
-    }
-
-    function setNftContract(address nftAddress)
-        external
-        onlyRole(MANAGER_ROLE)
-    {
-        _setNftContract(nftAddress);
-    }
-
-    function setListingFee(uint fee) public onlyRole(MANAGER_ROLE) {
-        listingFee = fee;
+        setNftContract(nftAddress);
     }
 
     function openOrder(
@@ -143,13 +126,6 @@ contract Marketplace is
         );
     }
 
-    function _withdrawProceeds(address account) private {
-        uint256 coins = proceeds[account];
-        require(coins > 0, "No proceeds available");
-        proceeds[account] = 0;
-        nftContract.safeTransferFrom(address(this), msg.sender, 0, coins, "");
-    }
-
     function withdrawProceeds() external {
         _withdrawProceeds(msg.sender);
     }
@@ -171,6 +147,16 @@ contract Marketplace is
         return proceeds[msg.sender];
     }
 
+    function setNftContract(address nftAddress) public onlyRole(MANAGER_ROLE) {
+        require(nftAddress != address(0), "Can't be set to the zero address");
+        _nftAddress = nftAddress;
+        nftContract = IERC1155(_nftAddress);
+    }
+
+    function setListingFee(uint fee) public onlyRole(MANAGER_ROLE) {
+        listingFee = fee;
+    }
+
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -178,5 +164,12 @@ contract Marketplace is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    function _withdrawProceeds(address account) private {
+        uint256 coins = proceeds[account];
+        require(coins > 0, "No proceeds available");
+        proceeds[account] = 0;
+        nftContract.safeTransferFrom(address(this), msg.sender, 0, coins, "");
     }
 }
