@@ -11,8 +11,7 @@ interface iMarketplace {
 
     event ItemDelisted(
         address indexed caller,
-        uint256 indexed tokenId,
-        uint256 amount
+        uint256 indexed tokenId
     );
 
     event ItemBought(
@@ -23,34 +22,25 @@ interface iMarketplace {
     );
 
     struct MarketOrder {
-        uint256 tokenId;
         uint256 amount;
         uint256 price;
-        address payable seller;
     }
 
-    function openOrder(
+    function updateListing(
         uint256 tokenId,
         uint256 amount,
         uint256 price
     ) external;
 
-    function updateOrder(
-        uint256 orderId,
-        uint256 tokenId,
-        uint256 amount,
-        uint256 price
-    ) external;
+    function cancelListing(uint256 tokenId) external;
 
-    function cancelOrder(uint256 orderId) external;
-
-    function fillOrder(uint256 orderId, uint256 amount) external;
+    function buyFromListing(uint256 tokenId, address seller, uint256 amount) external;
 
     function withdrawProceeds() external;
 
     function adminWithdrawal() external;
 
-    function getOrder(uint256 orderId)
+    function getListing(uint256 tokenId, address seller)
         external
         view
         returns (MarketOrder memory);

@@ -1,34 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "./iWNSMarketplace.sol";
 
-contract Marketplace is
+contract MarketLite is
     iMarketplace,
-    ERC1155Holder,
-    AccessControl,
-    ReentrancyGuard
+    Initializable,
+    PausableUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    ERC1155HolderUpgradeable,
+    ReentrancyGuardUpgradeable
 {
-    bytes32 private constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    uint256 public listingFee = 1 ether;
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    mapping(address => uint256) private proceeds;
+    mapping(uint256 => mapping(address => MarketOrder)) orderBook;
+
+    uint256 public listingFee;
     address public _nftAddress;
     IERC1155 private nftContract;
-    using Counters for Counters.Counter;
-    Counters.Counter private _orderIds;
-
-    mapping(uint256 => MarketOrder) public orderBook;
-    mapping(address => uint256) private proceeds;
-
-    modifier isSeller(uint256 orderId) {
-        require(msg.sender == orderBook[orderId].seller, "Not your order");
-        _;
-    }
 
     modifier canSell(
         uint256 tokenId,
@@ -49,81 +50,67 @@ contract Marketplace is
         _;
     }
 
-    constructor(address nftAddress) {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
-
-        setNftContract(nftAddress);
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
-    function openOrder(
+    function initialize(address nftAddress) public initializer {
+        __Pausable_init();
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+        __ERC1155Holder_init();
+        __ReentrancyGuard_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+        _grantRole(UPGRADER_ROLE, msg.sender);
+
+        setNftContract(nftAddress);
+        listingFee = 1;
+    }
+
+    function updateListing(
         uint256 tokenId,
         uint256 amount,
         uint256 price
     ) external canSell(tokenId, amount, price) nonReentrant {
-        _orderIds.increment();
-        orderBook[_orderIds.current()] = MarketOrder(
-            tokenId,
-            amount,
-            price,
-            payable(msg.sender)
-        );
+        orderBook[tokenId][msg.sender] = MarketOrder(amount, price);
         emit ItemListed(msg.sender, tokenId, price, amount);
-        // nftContract.safeTransferFrom(msg.sender, address(this), tokenId, amount, "");
     }
 
-    function updateOrder(
-        uint256 orderId,
+    function cancelListing(uint256 tokenId) external {
+        emit ItemDelisted(msg.sender, tokenId);
+        delete (orderBook[tokenId][msg.sender]);
+    }
+
+    function buyFromListing(
         uint256 tokenId,
-        uint256 amount,
-        uint256 price
-    ) external isSeller(orderId) canSell(tokenId, amount, price) nonReentrant {
-        orderBook[orderId] = MarketOrder(
-            tokenId,
-            amount,
-            price,
-            payable(msg.sender)
-        );
-        emit ItemListed(msg.sender, tokenId, price, amount);
-    }
-
-    function cancelOrder(uint256 orderId) external isSeller(orderId) {
-        emit ItemDelisted(
-            msg.sender,
-            orderBook[orderId].tokenId,
-            orderBook[orderId].amount
-        );
-        delete (orderBook[orderId]);
-    }
-
-    function fillOrder(uint256 orderId, uint256 amount) external {
-        MarketOrder memory order = orderBook[orderId];
-        uint256 coinBalance = nftContract.balanceOf(msg.sender, 0);
-
+        address seller,
+        uint256 amount
+    ) external {
+        MarketOrder memory order = orderBook[tokenId][seller];
         require(order.price > 0, "Invalid listing");
-        require(coinBalance >= order.price, "Insuficient coin balance");
+        require(order.amount > 0, "Invalid listing");
+        require(amount > 0, "Can't purchase Nothing");
         require(amount <= order.amount, "Can't purchase more than is listed");
 
-        orderBook[orderId].amount -= amount;
-        proceeds[order.seller] += order.price - listingFee;
-        proceeds[address(this)] += listingFee;
+        uint256 cost = order.price * amount;
+        uint256 fee = order.price * amount;
+        uint256 coinBalance = nftContract.balanceOf(msg.sender, 0);
+        require(coinBalance >= cost, "Insuficient coin balance");
 
-        nftContract.safeTransferFrom(
-            msg.sender,
-            address(this),
-            0,
-            order.price,
-            ""
-        );
+        orderBook[tokenId][seller].amount -= amount;
+        proceeds[seller] += cost - fee;
+        proceeds[address(this)] += fee;
 
-        onERC1155Received(address(this), msg.sender, order.tokenId, amount, "");
-        nftContract.safeTransferFrom(
-            order.seller,
-            msg.sender,
-            order.tokenId,
-            amount,
-            ""
-        );
+        nftContract.safeTransferFrom(msg.sender, address(this), 0, fee, "");
+
+        onERC1155Received(address(this), msg.sender, tokenId, amount, "");
+        nftContract.safeTransferFrom(seller, msg.sender, tokenId, amount, "");
+
+        emit ItemBought(msg.sender, tokenId, order.price, amount);
     }
 
     function withdrawProceeds() external {
@@ -134,17 +121,24 @@ contract Marketplace is
         _withdrawProceeds(address(this));
     }
 
-    function getOrder(uint256 orderId)
+    function getProceeds() external view returns (uint256) {
+        return proceeds[msg.sender];
+    }
+
+    function getListing(uint256 tokenId, address seller)
         external
         view
         returns (MarketOrder memory)
     {
-        require(orderBook[orderId].price > 0, "Invalid listing");
-        return orderBook[orderId];
+        MarketOrder memory order = orderBook[tokenId][seller];
+
+        require(order.price > 0, "Invalid listing");
+        require(order.amount > 0, "Invalid listing");
+        return order;
     }
 
-    function getProceeds() external view returns (uint256) {
-        return proceeds[msg.sender];
+    function setListingFee(uint fee) external onlyRole(MANAGER_ROLE) {
+        listingFee = fee;
     }
 
     function setNftContract(address nftAddress) public onlyRole(MANAGER_ROLE) {
@@ -153,18 +147,34 @@ contract Marketplace is
         nftContract = IERC1155(_nftAddress);
     }
 
-    function setListingFee(uint fee) public onlyRole(MANAGER_ROLE) {
-        listingFee = fee;
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC1155Receiver, AccessControl)
+        override(ERC1155ReceiverUpgradeable, AccessControlUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }
+
+    function _afterBuy(uint256 tokenId, address seller) internal {
+        if (orderBook[tokenId][seller].amount == 0) {
+            delete (orderBook[tokenId][seller]);
+        }
+    }
+
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        override
+        onlyRole(UPGRADER_ROLE)
+    {}
 
     function _withdrawProceeds(address account) private {
         uint256 coins = proceeds[account];
