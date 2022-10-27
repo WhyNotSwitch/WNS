@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "./iWNS.sol";
+import "./IWNS.sol";
 import "./WNS1155.sol";
 
 error NoRevenue();

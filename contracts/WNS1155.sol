@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
-contract WhyNotSwitch is
+abstract contract WhyNotSwitch is
     ERC1155,
     AccessControl,
     ERC1155Burnable,
