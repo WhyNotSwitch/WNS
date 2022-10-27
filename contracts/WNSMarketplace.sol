@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 import "./iWNSMarketplace.sol";
 
-contract MarketLite is
+contract Marketplace is
     iMarketplace,
     Initializable,
     PausableUpgradeable,
@@ -25,7 +25,7 @@ contract MarketLite is
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     mapping(address => uint256) private proceeds;
-    mapping(uint256 => mapping(address => MarketOrder)) orderBook;
+    mapping(uint256 => mapping(address => MarketOrder)) private orderBook;
 
     uint256 public listingFee;
     address public _nftAddress;
@@ -97,7 +97,7 @@ contract MarketLite is
         require(amount <= order.amount, "Can't purchase more than is listed");
 
         uint256 cost = order.price * amount;
-        uint256 fee = order.price * amount;
+        uint256 fee = listingFee * amount;
         uint256 coinBalance = nftContract.balanceOf(msg.sender, 0);
         require(coinBalance >= cost, "Insuficient coin balance");
 
@@ -121,8 +121,8 @@ contract MarketLite is
         _withdrawProceeds(address(this));
     }
 
-    function getProceeds() external view returns (uint256) {
-        return proceeds[msg.sender];
+    function getProceeds(address account) external view returns (uint256) {
+        return proceeds[account];
     }
 
     function getListing(uint256 tokenId, address seller)

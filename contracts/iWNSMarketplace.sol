@@ -45,5 +45,5 @@ interface iMarketplace {
         view
         returns (MarketOrder memory);
 
-    function getProceeds() external view returns (uint256);
+    function getProceeds(address account) external view returns (uint256);
 }
