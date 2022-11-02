@@ -50,14 +50,7 @@ interface iWNS{
 
     function setDeveloper(address to, uint256 id) external;
 
-    function developerOf(uint256 id) external view returns (address);
-
     function pay(uint256 id, uint256 amount) external;
-    
-    function feeOf(uint256 id) external view returns(uint256);
-
-    function revenueOf(uint256 id) external view returns(uint256);
 
     function claimFunds(uint256[] memory ids) external;
-
 }
