@@ -1,27 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-
-interface iWNS{
-    event ItemListed(
-        address indexed seller,
-        uint256 indexed tokenId,
-        uint256 indexed price,
-        uint256 amount
-    );
-
-    event ItemDelisted(
-        address indexed caller,
-        uint256 indexed tokenId
-    );
-
-    event ItemBought(
-        address indexed buyer,
-        uint256 indexed tokenId,
-        uint256 indexed price,
-        uint256 amount
-    );
-
+interface iWNS {
     event Revenue(
         address from,
         uint256 indexed amount,
@@ -36,21 +16,11 @@ interface iWNS{
         uint256 indexed timestamp
     );
 
-    struct Meta {
-        uint256 fee;
-        uint256 revenue;
-        address developer;
-        uint256 totalSupply;
-    }
-
-    struct MarketOrder {
-        uint256 amount;
-        uint256 price;
-    }
-
     function setDeveloper(address to, uint256 id) external;
 
     function pay(uint256 id, uint256 amount) external;
+
+    function revenueOf(uint256 id) external view returns (uint256);
 
     function claimFunds(uint256[] memory ids) external;
 }
