@@ -2,6 +2,15 @@
 pragma solidity ^0.8.16;
 
 interface iWNS {
+    error NoRevenue();
+
+    event Switch(
+        uint256 indexed timestamp,
+        uint256 indexed meter_id,
+        bool indexed state,
+        address from
+    );
+
     event Revenue(
         address from,
         uint256 indexed amount,
@@ -10,17 +19,18 @@ interface iWNS {
     );
 
     event Claim(
-        address to,
+        address indexed to,
         uint256 indexed amount,
-        uint256 indexed id,
         uint256 indexed timestamp
     );
 
-    function setDeveloper(address to, uint256 id) external;
+    function _switch(uint256 meter_id, bool state) external;
 
-    function pay(uint256 id, uint256 amount) external;
+    function stateOf(uint256 meter_id) external view returns (bool);
 
-    function revenueOf(uint256 id) external view returns (uint256);
+    function revenueOf(address owner) external view returns (uint256);
 
-    function claimFunds(uint256[] memory ids) external;
+    function pay(uint256 id) external payable;
+
+    function claim() external;
 }
