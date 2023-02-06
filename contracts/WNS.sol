@@ -33,16 +33,16 @@ contract WhyNotSwitch is
         _disableInitializers();
     }
 
-    function _switch(uint256 meter_id, bool state)
+    function _switch(uint256 id, bool state)
         external
         onlyRole(W3BSTREAM_ROLE)
     {
-        emit Switch(block.timestamp, meter_id, state, msg.sender);
-        _state[meter_id] = state;
+        emit Switch(block.timestamp, id, state, msg.sender);
+        _state[id] = state;
     }
 
-    function stateOf(uint256 meter_id) external view returns (bool) {
-        return _state[meter_id];
+    function stateOf(uint256 id) external view returns (bool) {
+        return _state[id];
     }
 
     function revenueOf(address owner) external view returns (uint256) {
@@ -102,26 +102,13 @@ contract WhyNotSwitch is
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId
+        uint256 id, /* firstTokenId */
+        uint256 batchSize
     )
         internal
-        virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    function _beforeConsecutiveTokenTransfer(
-        address from,
-        address to,
-        uint256, /*first*/
-        uint96 size
-    )
-        internal
-        virtual
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
-    {
-        super._beforeTokenTransfer(from, to, size);
+        super._beforeTokenTransfer(from, to, id, batchSize);
     }
 
     function _burn(uint256 id)
