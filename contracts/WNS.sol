@@ -21,6 +21,7 @@ contract WhyNotSwitch is
 {
     // map id -> metadata
     mapping(uint256 => bool) private _state;
+    mapping(uint256 => address) private _provider;
     mapping(uint256 => uint256) private _tariff;
     mapping(address => uint256) private _revenue;
 
@@ -45,13 +46,22 @@ contract WhyNotSwitch is
         return _state[id];
     }
 
+    function tariffOf(uint256 id) external view returns (uint256) {
+        return _tariff[id];
+    }
+
     function revenueOf(address owner) external view returns (uint256) {
         return _revenue[owner];
     }
 
     function pay(uint256 id) external payable {
         address owner = ownerOf(id);
-        _revenue[owner] += msg.value;
+        address provider = _provider[id];
+        require(provider != address(0), "ERC721: invalid token ID");
+
+        _revenue[owner] += msg.value * 8/10;
+        _revenue[provider] += msg.value * 2/10;
+
         emit Revenue(msg.sender, msg.value, id, block.timestamp);
     }
 
@@ -89,6 +99,7 @@ contract WhyNotSwitch is
     ) public onlyRole(MINTER_ROLE) {
         _safeMint(to, id);
         _setTokenURI(id, uri);
+        _provider[id] = to;
     }
 
     function _authorizeUpgrade(address newImplementation)
@@ -102,7 +113,7 @@ contract WhyNotSwitch is
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 id, /* firstTokenId */
+        uint256 id, /* firstid */
         uint256 batchSize
     )
         internal
