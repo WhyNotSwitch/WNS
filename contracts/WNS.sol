@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -16,6 +17,7 @@ contract WhyNotSwitch is
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
+    PausableUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
@@ -25,6 +27,7 @@ contract WhyNotSwitch is
     mapping(uint256 => uint256) private _tariff;
     mapping(address => uint256) private _revenue;
 
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant W3BSTREAM_ROLE = keccak256("W3BSTREAM_ROLE");
@@ -80,16 +83,27 @@ contract WhyNotSwitch is
         __ERC721_init("Why Not Switch", "WNS");
         __ERC721Enumerable_init();
         __ERC721URIStorage_init();
+        __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(W3BSTREAM_ROLE, msg.sender);
     }
 
     function _baseURI() internal pure override returns (string memory) {
         return "https://nft.whynotswitch.com";
+    }
+
+    function pause() public onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() public onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     function safeMint(
@@ -113,11 +127,12 @@ contract WhyNotSwitch is
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 id, /* firstid */
+        uint256 id,
         uint256 batchSize
     )
         internal
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        whenNotPaused
     {
         super._beforeTokenTransfer(from, to, id, batchSize);
     }
