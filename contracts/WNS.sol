@@ -3,7 +3,6 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -11,12 +10,12 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./IWNS.sol";
 
+/// @custom:security-contact info@whynotswitch.com
 contract WhyNotSwitch is
     iWNS,
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
-    ERC721URIStorageUpgradeable,
     PausableUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable
@@ -37,10 +36,7 @@ contract WhyNotSwitch is
         _disableInitializers();
     }
 
-    function _switch(uint256 id, bool state)
-        external
-        onlyRole(W3BSTREAM_ROLE)
-    {
+    function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
         emit Switch(block.timestamp, id, state, msg.sender);
         _state[id] = state;
     }
@@ -62,8 +58,9 @@ contract WhyNotSwitch is
         address provider = _provider[id];
         require(provider != address(0), "ERC721: invalid token ID");
 
-        _revenue[owner] += msg.value * 8/10;
-        _revenue[provider] += msg.value * 2/10;
+        _state[id] = true;
+        _revenue[owner] += (msg.value * 8) / 10;
+        _revenue[provider] += (msg.value * 2) / 10;
 
         emit Revenue(msg.sender, msg.value, id, block.timestamp);
     }
@@ -82,7 +79,6 @@ contract WhyNotSwitch is
     function initialize() public initializer {
         __ERC721_init("Why Not Switch", "WNS");
         __ERC721Enumerable_init();
-        __ERC721URIStorage_init();
         __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -106,13 +102,8 @@ contract WhyNotSwitch is
         _unpause();
     }
 
-    function safeMint(
-        address to,
-        uint256 id,
-        string memory uri
-    ) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, uint256 id) public onlyRole(MINTER_ROLE) {
         _safeMint(to, id);
-        _setTokenURI(id, uri);
         _provider[id] = to;
     }
 
@@ -135,22 +126,6 @@ contract WhyNotSwitch is
         whenNotPaused
     {
         super._beforeTokenTransfer(from, to, id, batchSize);
-    }
-
-    function _burn(uint256 id)
-        internal
-        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
-    {
-        super._burn(id);
-    }
-
-    function tokenURI(uint256 id)
-        public
-        view
-        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
-        returns (string memory)
-    {
-        return super.tokenURI(id);
     }
 
     function supportsInterface(bytes4 interfaceId)
