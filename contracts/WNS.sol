@@ -41,6 +41,10 @@ contract WhyNotSwitch is
         _state[id] = state;
     }
 
+    function revenueOf(address owner) external view returns (uint256) {
+        return _revenue[owner];
+    }
+    
     function stateOf(uint256 id) external view returns (bool) {
         return _state[id];
     }
@@ -49,8 +53,8 @@ contract WhyNotSwitch is
         return _tariff[id];
     }
 
-    function revenueOf(address owner) external view returns (uint256) {
-        return _revenue[owner];
+    function setTariffOf(uint256 id, uint256 tariff) external onlyRole(MINTER_ROLE) {
+        _tariff[id] = tariff;
     }
 
     function pay(uint256 id) external payable {
@@ -90,10 +94,6 @@ contract WhyNotSwitch is
         _grantRole(W3BSTREAM_ROLE, msg.sender);
     }
 
-    function _baseURI() internal pure override returns (string memory) {
-        return "https://nft.whynotswitch.com";
-    }
-
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
@@ -102,9 +102,10 @@ contract WhyNotSwitch is
         _unpause();
     }
 
-    function safeMint(address to, uint256 id) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, uint256 id, uint256 tariff) public onlyRole(MINTER_ROLE) {
         _safeMint(to, id);
         _provider[id] = to;
+        _tariff[id] = tariff;
     }
 
     function _authorizeUpgrade(address newImplementation)

@@ -26,9 +26,13 @@ interface iWNS {
 
     function _switch(uint256 meter_id, bool state) external;
 
-    function stateOf(uint256 meter_id) external view returns (bool);
+    function setTariffOf(uint256 id, uint256 tariff) external;
 
     function revenueOf(address owner) external view returns (uint256);
+
+    function stateOf(uint256 meter_id) external view returns (bool);
+
+    function tariffOf(uint256 id) external view returns (uint256);
 
     function pay(uint256 id) external payable;
 
