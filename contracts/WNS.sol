@@ -21,40 +21,20 @@ contract WhyNotSwitch is
     UUPSUpgradeable
 {
     // map id -> metadata
-    mapping(uint256 => bool) private _state;
     mapping(uint256 => address) private _provider;
-    mapping(uint256 => uint256) private _tariff;
     mapping(address => uint256) private _revenue;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant W3BSTREAM_ROLE = keccak256("W3BSTREAM_ROLE");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
-        emit Switch(block.timestamp, id, state, msg.sender);
-        _state[id] = state;
-    }
-
     function revenueOf(address owner) external view returns (uint256) {
         return _revenue[owner];
-    }
-    
-    function stateOf(uint256 id) external view returns (bool) {
-        return _state[id];
-    }
-
-    function tariffOf(uint256 id) external view returns (uint256) {
-        return _tariff[id];
-    }
-
-    function setTariffOf(uint256 id, uint256 tariff) external onlyRole(MINTER_ROLE) {
-        _tariff[id] = tariff;
     }
 
     function pay(uint256 id) external payable {
@@ -62,7 +42,6 @@ contract WhyNotSwitch is
         address provider = _provider[id];
         require(provider != address(0), "ERC721: invalid token ID");
 
-        _state[id] = true;
         _revenue[owner] += (msg.value * 8) / 10;
         _revenue[provider] += (msg.value * 2) / 10;
 
@@ -91,7 +70,6 @@ contract WhyNotSwitch is
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
-        _grantRole(W3BSTREAM_ROLE, msg.sender);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -102,10 +80,9 @@ contract WhyNotSwitch is
         _unpause();
     }
 
-    function safeMint(address to, uint256 id, uint256 tariff) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, uint256 id) public onlyRole(MINTER_ROLE) {
         _safeMint(to, id);
         _provider[id] = to;
-        _tariff[id] = tariff;
     }
 
     function _authorizeUpgrade(address newImplementation)
