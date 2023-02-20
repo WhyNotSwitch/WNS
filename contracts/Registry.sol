@@ -36,6 +36,7 @@ contract Registry is iRegistry, Initializable, AccessControlUpgradeable, UUPSUpg
     }
 
     function setTariffOf(uint256 id, uint256 tariff) external onlyRole(REGISTRAR_ROLE) {
+        emit Tariff(block.timestamp, id, tariff, msg.sender)
         _tariff[id] = tariff;
     }
 

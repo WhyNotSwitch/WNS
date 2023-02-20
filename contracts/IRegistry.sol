@@ -2,8 +2,6 @@
 pragma solidity ^0.8.16;
 
 interface iRegistry {
-    error NoRevenue();
-
     event Register(
         uint256 indexed timestamp,
         uint256 indexed id,
