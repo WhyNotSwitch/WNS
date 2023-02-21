@@ -9,13 +9,6 @@ interface iRegistry {
         address from
     );
 
-    event Switch(
-        uint256 indexed timestamp,
-        uint256 indexed id,
-        bool indexed state,
-        address from
-    );
-
     event Tariff(
         uint256 indexed timestamp,
         uint256 indexed id,
@@ -31,7 +24,11 @@ interface iRegistry {
 
     function tariffOf(uint256 id) external view returns (uint256);
 
-    function register(uint256 id, address xid, uint256 tariff) external;
+    function register(
+        uint256 id,
+        address xid,
+        uint256 tariff
+    ) external;
 
     function identify(uint256 id) external view returns (address);
 }

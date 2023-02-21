@@ -7,12 +7,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "./IRegistry.sol";
 
-contract Registry is iRegistry, Initializable, AccessControlUpgradeable, UUPSUpgradeable {
-
-     // map id -> metadata
+contract Registry is
+    iRegistry,
+    Initializable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable
+{
+    // map id -> metadata
     mapping(uint256 => bool) private _state;
+    mapping(uint256 => address) private _registry;
     mapping(uint256 => uint256) private _tariff;
-    mapping(uint256 => address) private _registry; 
 
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant REGISTRAR_ROLE = keccak256("REGISTRAR_ROLE");
@@ -23,34 +27,7 @@ contract Registry is iRegistry, Initializable, AccessControlUpgradeable, UUPSUpg
         _disableInitializers();
     }
 
-    function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
-        emit Switch(block.timestamp, id, state, msg.sender);
-        _state[id] = state;
-    }
-    function stateOf(uint256 id) external view returns (bool) {
-        return _state[id];
-    }
-
-    function tariffOf(uint256 id) external view returns (uint256) {
-        return _tariff[id];
-    }
-
-    function setTariffOf(uint256 id, uint256 tariff) external onlyRole(REGISTRAR_ROLE) {
-        emit Tariff(block.timestamp, id, tariff, msg.sender)
-        _tariff[id] = tariff;
-    }
-
-    function register(uint256 id, address xid, uint256 tariff) external onlyRole(REGISTRAR_ROLE) {
-        emit Register(block.timestamp, id, xid, msg.sender);
-        _registry[id] = xid;
-        _tariff[id] = tariff;
-    }
-
-    function identify(uint256 id) external view returns (address) {
-        return _registry[id];
-    }
-
-    function initialize() initializer public {
+    function initialize() public initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
@@ -62,7 +39,41 @@ contract Registry is iRegistry, Initializable, AccessControlUpgradeable, UUPSUpg
 
     function _authorizeUpgrade(address newImplementation)
         internal
-        onlyRole(UPGRADER_ROLE)
         override
+        onlyRole(UPGRADER_ROLE)
     {}
+
+    function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
+        _state[id] = state;
+    }
+
+    function stateOf(uint256 id) external view returns (bool) {
+        return _state[id];
+    }
+
+    function tariffOf(uint256 id) external view returns (uint256) {
+        return _tariff[id];
+    }
+
+    function setTariffOf(uint256 id, uint256 tariff)
+        external
+        onlyRole(REGISTRAR_ROLE)
+    {
+        emit Tariff(block.timestamp, id, tariff, msg.sender);
+        _tariff[id] = tariff;
+    }
+
+    function register(
+        uint256 id,
+        address xid,
+        uint256 tariff
+    ) external onlyRole(REGISTRAR_ROLE) {
+        emit Register(block.timestamp, id, xid, msg.sender);
+        _registry[id] = xid;
+        _tariff[id] = tariff;
+    }
+
+    function identify(uint256 id) external view returns (address) {
+        return _registry[id];
+    }
 }
