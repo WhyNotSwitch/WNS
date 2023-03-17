@@ -14,9 +14,9 @@ contract Registry is
     UUPSUpgradeable
 {
     // map id -> metadata
-    mapping(uint256 => bool) private _state;
-    mapping(uint256 => address) private _registry;
-    mapping(uint256 => uint256) private _tariff;
+    mapping(uint256 => bool) private STATE;
+    mapping(uint256 => uint256) private TARIFF;
+    mapping(uint256 => bytes32) private REGISTRY;
 
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant REGISTRAR_ROLE = keccak256("REGISTRAR_ROLE");
@@ -37,43 +37,42 @@ contract Registry is
         _grantRole(W3BSTREAM_ROLE, msg.sender);
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyRole(UPGRADER_ROLE)
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) {}
+
+    function _register(
+        uint256 id,
+        bytes32 pbk,
+        uint256 tariff
+    ) external onlyRole(REGISTRAR_ROLE) {
+        REGISTRY[id] = pbk;
+        TARIFF[id] = tariff;
+        emit Register(id, pbk, tariff, msg.sender, block.timestamp);
+    }
 
     function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
-        _state[id] = state;
+        STATE[id] = state;
+        emit Switch(block.timestamp, id, state, msg.sender);
+    }
+
+    function _tariff(
+        uint256 id,
+        uint256 tariff
+    ) external onlyRole(REGISTRAR_ROLE) {
+        TARIFF[id] = tariff;
+        emit Register(id, REGISTRY[id], tariff, msg.sender, block.timestamp);
+    }
+
+    function identify(uint256 id) external view returns (bytes32) {
+        return REGISTRY[id];
     }
 
     function stateOf(uint256 id) external view returns (bool) {
-        return _state[id];
+        return STATE[id];
     }
 
     function tariffOf(uint256 id) external view returns (uint256) {
-        return _tariff[id];
-    }
-
-    function setTariffOf(uint256 id, uint256 tariff)
-        external
-        onlyRole(REGISTRAR_ROLE)
-    {
-        emit Tariff(block.timestamp, id, tariff, msg.sender);
-        _tariff[id] = tariff;
-    }
-
-    function register(
-        uint256 id,
-        address xid,
-        uint256 tariff
-    ) external onlyRole(REGISTRAR_ROLE) {
-        emit Register(block.timestamp, id, xid, msg.sender);
-        _registry[id] = xid;
-        _tariff[id] = tariff;
-    }
-
-    function identify(uint256 id) external view returns (address) {
-        return _registry[id];
+        return TARIFF[id];
     }
 }

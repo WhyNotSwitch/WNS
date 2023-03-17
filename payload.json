@@ -1,0 +1,30 @@
+[
+    {
+        "payload": {
+            "address": "0x493f8459047da85bea76f77f1d4539e7a7f7fddf",
+            "blockHash": "0x18844c6755e49c8391a62235717573b1efaf0ad60754c46ef3643331055cc749",
+            "blockNumber": "0x11de2db",
+            "data": "0x0000000000000000000000002d80b7d961f807bea9cfb34b1399fdedd96e7249",
+            "logIndex": "0x1",
+            "removed": false,
+            "topics": [
+                "0xa3d75270a66982cf590dc1ba69416ea420846e5605f6951173b6cfafea9a87e2",
+                "0x0000000000000000000000000000000000000000000000000027147114878000",
+                "0x0000000000000000000000000000000000000000000000000000000000000005",
+                "0x0000000000000000000000000000000000000000000000000000000063e875ca"
+            ],
+            "transactionHash": "0xb8901783226138d8fd62ea945755a5f812537bc555f62b7800d8a807b0476c59",
+            "transactionIndex": "0x1"
+        }
+    },
+    {
+        "payload": {
+            "usage": {
+                "device_id": "5",
+                "timestamp": 0,
+                "energy_spent_per_kw_hr": 0.003666666666666667
+            },
+            "signature": "3044022071449b7d9a993d0eb725398c9022a8e701129894ee792e3f0e5fbcb39dbdaeeb022049f45fbef9e3b0c269e82aa631c0581ec717a7eb64f34a222d78ab11e476a271"
+        }
+    }
+]
