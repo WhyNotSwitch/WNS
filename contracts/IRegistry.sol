@@ -4,10 +4,10 @@ pragma solidity ^0.8.16;
 interface iRegistry {
     event Register(
         uint256 indexed id,
-        bytes32 indexed pkb,
         uint256 indexed tariff,
-        address from,
-        uint256 timestamp
+        bytes32 indexed pkb,
+        uint256 timestamp,
+        address from
     );
 
     event Switch(

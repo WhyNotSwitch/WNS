@@ -48,7 +48,7 @@ contract Registry is
     ) external onlyRole(REGISTRAR_ROLE) {
         REGISTRY[id] = pbk;
         TARIFF[id] = tariff;
-        emit Register(id, pbk, tariff, msg.sender, block.timestamp);
+        emit Register(id, tariff, pbk, block.timestamp, msg.sender);
     }
 
     function _switch(uint256 id, bool state) external onlyRole(W3BSTREAM_ROLE) {
@@ -61,7 +61,7 @@ contract Registry is
         uint256 tariff
     ) external onlyRole(REGISTRAR_ROLE) {
         TARIFF[id] = tariff;
-        emit Register(id, REGISTRY[id], tariff, msg.sender, block.timestamp);
+        emit Register(id, tariff, REGISTRY[id], block.timestamp, msg.sender);
     }
 
     function identify(uint256 id) external view returns (bytes32) {
