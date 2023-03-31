@@ -5,8 +5,10 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 
 import "./IWNS.sol";
 
@@ -18,11 +20,15 @@ contract WhyNotSwitch is
     ERC721EnumerableUpgradeable,
     PausableUpgradeable,
     AccessControlUpgradeable,
+    ERC721BurnableUpgradeable,
     UUPSUpgradeable
 {
     // map id -> metadata
     mapping(uint256 => address) private _provider;
     mapping(address => uint256) private _revenue;
+
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+    CountersUpgradeable.Counter private _idCounter;
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -64,6 +70,7 @@ contract WhyNotSwitch is
         __ERC721Enumerable_init();
         __Pausable_init();
         __AccessControl_init();
+        __ERC721Burnable_init();
         __UUPSUpgradeable_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -80,16 +87,17 @@ contract WhyNotSwitch is
         _unpause();
     }
 
-    function safeMint(address to, uint256 id) public onlyRole(MINTER_ROLE) {
+
+    function safeMint(address to) public onlyRole(MINTER_ROLE) {
+        uint256 id = _idCounter.current();
+        _idCounter.increment();
         _safeMint(to, id);
         _provider[id] = to;
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyRole(UPGRADER_ROLE)
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) {}
 
     // The following functions are overrides required by Solidity.
 
@@ -106,7 +114,9 @@ contract WhyNotSwitch is
         super._beforeTokenTransfer(from, to, id, batchSize);
     }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(
